@@ -123,13 +123,16 @@ export default function DeskScene() {
       wrap.style.width = `${PAGE_W}px`;
       wrap.style.height = `${PAGE_H}px`;
       wrap.style.background = '#fff';
+      wrap.style.display = 'block';
       wrap.style.overflow = 'hidden';
 
       const frame = document.createElement('iframe');
       frame.src = PORTFOLIO_URL;
       frame.title = 'Portfolio';
       frame.allow = 'fullscreen';
-      frame.style.cssText = 'width:100%;height:100%;border:0;display:block;';
+      frame.width = String(PAGE_W);
+      frame.height = String(PAGE_H);
+      frame.style.cssText = `width:${PAGE_W}px;height:${PAGE_H}px;min-width:${PAGE_W}px;min-height:${PAGE_H}px;border:0;display:block;`;
       wrap.appendChild(frame);
 
       screenObj = new CSS3DObject(wrap);

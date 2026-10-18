@@ -2,9 +2,6 @@ import type { Metadata } from 'next';
 import { Playfair_Display, Space_Mono } from 'next/font/google';
 import './globals.css';
 
-// These fonts are used both by the page UI and by the canvas that draws the
-// "Archive" website onto the monitor. The CSS variables are read at runtime
-// by DeskScene so the canvas gets the exact hashed family names next/font emits.
 const serif = Playfair_Display({
   subsets: ['latin'],
   weight: ['700', '900'],
@@ -21,8 +18,8 @@ const mono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Archive Desk',
-  description: 'A lamp-lit desk setup built with Three.js.',
+  title: 'Dhruv Sharma | 3D Portfolio',
+  description: 'A 3D portfolio website built with Next.js, React Three Fiber, and TypeScript. Explore the interactive 3D desk scene and discover my projects and skills.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
