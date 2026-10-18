@@ -1,26 +1,140 @@
-@import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #120d0a;
+  --stage: #1b130f;
+  --ink: #f3e6cf;
+  --ink-soft: #b9a98f;
+  --amber: #e8a45a;
+  --line: rgba(243, 230, 207, 0.18);
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
+  margin: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, Menlo, Consolas, monospace;
+}
+
+.page {
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 360px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #120c08; /* matches the scene fog; shows through the canvas in live mode */
+  border: 1px solid var(--line);
+  cursor: grab;
+  touch-action: none;
+}
+
+.stage:active {
+  cursor: grabbing;
+}
+
+.bar {
+  z-index: 2;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  background: linear-gradient(to top, rgba(10, 6, 4, 0.78), rgba(10, 6, 4, 0));
+  pointer-events: none;
+}
+
+.bar > * {
+  pointer-events: auto;
+}
+
+.title {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.01em;
+}
+
+.title small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.controls button {
+  font: 700 12px/1 var(--font-mono), ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(20, 13, 9, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  border-color: var(--amber);
+}
+
+.controls button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.controls button[aria-pressed='true'] {
+  background: var(--amber);
+  color: #1a0f08;
+  border-color: var(--amber);
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 10px;
+  }
+  .bar {
+    padding: 10px;
+  }
 }
