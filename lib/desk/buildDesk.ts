@@ -11,6 +11,8 @@ import { buildDeskProps } from './props';
 import { buildCoffee } from './coffee';
 import { buildGadgets } from './gadgets';
 import { buildLights } from './lights';
+import { buildDetails } from './details';
+import { buildTerrarium } from './terrarium';
 
 export { LIGHTS, SCREEN, WALL } from './constants';
 
@@ -35,6 +37,8 @@ export function buildDesk(
   buildRoom(ctx);
   buildWallDecor(ctx);
   buildShelfBooks(ctx);
+  buildDetails(ctx);
+  buildTerrarium(ctx);
   const { MZ, screenMat } = buildMonitor(ctx);
   const { B, shade, bulb, shadeInnerMat, bulbMat, bulbSprite } = buildLamp(ctx);
   const cableMat = buildCables(ctx, B, MZ);

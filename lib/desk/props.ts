@@ -45,7 +45,7 @@ export function buildDeskProps(ctx: DeskCtx, cableMat: THREE.Material) {
   /* ---------- notebook + pen ---------- */
   {
     const nb = new THREE.Group();
-    nb.position.set(-0.64, 0, 0.22);
+    nb.position.set(-0.65, 0, 0.40);
     nb.rotation.y = 0.35;
     scene.add(nb);
     const part = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number) => {
@@ -65,8 +65,8 @@ export function buildDeskProps(ctx: DeskCtx, cableMat: THREE.Material) {
 
   /* ---------- pen cup ---------- */
   {
-    const PX = -0.56;
-    const PZ = -0.05;
+    const PX = -0.70;
+    const PZ = 0.25;
     add(new THREE.CylinderGeometry(0.03, 0.026, 0.09, 32, 1, true), new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide }), PX, 0.045, PZ);
     add(new THREE.CylinderGeometry(0.026, 0.026, 0.004, 32), std(0x2a2a30, 0.6), PX, 0.002, PZ, false);
     const pens = [

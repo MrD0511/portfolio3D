@@ -12,10 +12,26 @@ const PORTFOLIO_URL = process.env.NEXT_PUBLIC_PORTFOLIO_URL ?? '';
 const PAGE_W = 1600;
 const PAGE_H = 900;
 
-const HOME_POS = new THREE.Vector3(0.12, 0.44, 1.7);
+// Camera poses are expressed as "target + direction * distance" so the distance
+// can change with the stage's aspect ratio (phones, split windows, rotation).
 const HOME_TARGET = new THREE.Vector3(0, 0.3, -0.12);
-const SCREEN_POS = new THREE.Vector3(0, 0.46, 0.7);
+const HOME_DIR = new THREE.Vector3(0.12, 0.14, 1.82).normalize();
 const SCREEN_TARGET = new THREE.Vector3(SCREEN.x, SCREEN.y, SCREEN.z);
+const SCREEN_DIR = new THREE.Vector3(0, 0.04, 1).normalize(); // almost head-on, so the page is not skewed
+const HOME_HALF_WIDTH = 0.62; // world units that should always be visible left/right of the target
+const SCREEN_MARGIN = 1.15; // breathing room around the monitor in "Use screen" mode
+
+/** Vertical fov and the two camera distances that keep the scene / the monitor in frame. */
+function layoutFor(aspect: number) {
+  const vfov = aspect >= 1 ? 36 : Math.min(62, 36 + (1 - aspect) * 40);
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(vfov / 2));
+  const homeDist = THREE.MathUtils.clamp(HOME_HALF_WIDTH / (tanHalf * aspect), 1.83, 2.7);
+  const screenDist = Math.max(
+    ((SCREEN.height / 2) * SCREEN_MARGIN) / tanHalf,
+    ((SCREEN.width / 2) * SCREEN_MARGIN) / (tanHalf * aspect),
+  );
+  return { vfov, homeDist, screenDist };
+}
 
 export default function DeskScene() {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -79,18 +95,25 @@ export default function DeskScene() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setClearColor(0x000000, 0);
-    renderer.domElement.style.position = 'absolute';
-    renderer.domElement.style.inset = '0';
-    renderer.domElement.style.zIndex = '1';
-    renderer.domElement.style.pointerEvents = 'none'; // orbit controls listen on the stage instead
-    stage.insertBefore(renderer.domElement, stage.firstChild);
+    const canvas = renderer.domElement;
+    canvas.style.position = 'absolute';
+    canvas.style.inset = '0';
+    // setSize(..., false) leaves the CSS size alone, so without this the canvas is
+    // drawn at its backing-store size (css px * devicePixelRatio) and no longer
+    // lines up with the CSS3D layer behind it.
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    canvas.style.zIndex = '1';
+    canvas.style.pointerEvents = 'none'; // orbit controls listen on the stage instead
+    stage.insertBefore(canvas, stage.firstChild);
 
     const scene = new THREE.Scene();
     if (!live) scene.background = new THREE.Color(0x120c08); // in live mode the stage colour shows through
-    scene.fog = new THREE.Fog(0x120c08, 2.4, 5);
+    scene.fog = new THREE.Fog(0x120c08, 2.6, 6);
 
     const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 20);
-    camera.position.copy(HOME_POS);
+    camera.position.copy(HOME_TARGET).addScaledVector(HOME_DIR, 1.83);
 
     const controls = new OrbitControls(camera, stage);
     controls.target.copy(HOME_TARGET);
@@ -100,10 +123,16 @@ export default function DeskScene() {
     controls.minDistance = 0.6;
     controls.maxDistance = 2.4;
     controls.minPolarAngle = 0.7;
-    controls.maxPolarAngle = 1.5;
+    controls.maxPolarAngle = 1.6; // must allow the near head-on "Use screen" pose
     controls.minAzimuthAngle = -0.75;
     controls.maxAzimuthAngle = 0.75;
     controls.update();
+
+    // true once the visitor has orbited/zoomed by hand; until then a resize re-frames the scene
+    let userMoved = false;
+    controls.addEventListener('start', () => {
+      userMoved = true;
+    });
 
     /* ---------- live portfolio on the monitor (CSS3D layer behind the canvas) ---------- */
     let cssRenderer: CSS3DRenderer | null = null;
@@ -142,7 +171,10 @@ export default function DeskScene() {
       cssScene.add(screenObj);
     }
 
-    /* ---------- camera fly-to (used by "Use screen" and "Reset view") ---------- */
+    /* ---------- camera poses + fly-to (used by "Use screen" and "Reset view") ---------- */
+    const homePos = new THREE.Vector3().copy(camera.position);
+    const screenPos = new THREE.Vector3();
+
     const fly = {
       active: false,
       t: 0,
@@ -163,8 +195,12 @@ export default function DeskScene() {
 
     interactFnRef.current = (on) => {
       if (screenObj) screenObj.element.style.pointerEvents = on ? 'auto' : 'none';
-      if (on) flyTo(SCREEN_POS, SCREEN_TARGET);
-      else flyTo(HOME_POS, HOME_TARGET);
+      if (on) {
+        flyTo(screenPos, SCREEN_TARGET);
+      } else {
+        userMoved = false;
+        flyTo(homePos, HOME_TARGET);
+      }
     };
     resetRef.current = () => {
       interactRef.current = false;
@@ -197,19 +233,48 @@ export default function DeskScene() {
         .catch(() => {});
     }
 
+    /* ---------- resize: keep canvas, CSS3D layer and camera framing in sync ---------- */
+    let wasPortrait: boolean | null = null;
     const resize = () => {
       const w = stage.clientWidth;
       const h = stage.clientHeight;
       if (!w || !h) return;
+
+      // devicePixelRatio changes with browser zoom or when the window moves between displays
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setSize(w, h, false);
       cssRenderer?.setSize(w, h);
-      camera.aspect = w / h;
-      // widen the view on portrait screens so the lamp and monitor stay in frame
-      camera.fov = w / h < 1 ? 36 + (1 - w / h) * 34 : 36;
+
+      const aspect = w / h;
+      const layout = layoutFor(aspect);
+      camera.aspect = aspect;
+      camera.fov = layout.vfov;
       camera.updateProjectionMatrix();
+
+      homePos.copy(HOME_TARGET).addScaledVector(HOME_DIR, layout.homeDist);
+      screenPos.copy(SCREEN_TARGET).addScaledVector(SCREEN_DIR, layout.screenDist);
+      controls.maxDistance = Math.max(2.4, layout.homeDist + 0.4);
+
+      const portrait = aspect < 1;
+      const orientationChanged = wasPortrait !== null && portrait !== wasPortrait;
+      const first = wasPortrait === null;
+      wasPortrait = portrait;
+
+      if (fly.active) {
+        // retarget the animation that is already running
+        fly.toPos.copy(interactRef.current ? screenPos : homePos);
+      } else if (interactRef.current) {
+        camera.position.copy(screenPos);
+        controls.target.copy(SCREEN_TARGET);
+      } else if (first || orientationChanged || !userMoved) {
+        camera.position.copy(homePos);
+        controls.target.copy(HOME_TARGET);
+      }
+      controls.update();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(stage);
+    window.addEventListener('resize', resize);
     resize();
 
     const onKey = (e: KeyboardEvent) => {
@@ -261,6 +326,7 @@ export default function DeskScene() {
       disposed = true;
       renderer.setAnimationLoop(null);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', resize);
       observer.disconnect();
       controls.dispose();
       desk.dispose();
