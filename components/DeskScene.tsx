@@ -340,12 +340,16 @@ export default function DeskScene() {
     <div className="stage" ref={stageRef}>
       {noWebGL && <div className="fallback">This scene needs WebGL, which is not available in this browser.</div>}
       <div className="bar" ref={barRef}>
-        <h1 className="title">
-          Archive Desk
-          <small>
-            {interactive ? 'Using the screen. Press Esc or Exit screen to go back.' : 'Drag to orbit, scroll or pinch to zoom'}
-          </small>
-        </h1>
+        <div>
+          <h1 className="title">
+            Hello, I'm Dhruv. <br />
+            Welcome to my desk. <br />
+            <small>
+              {interactive ? 'Using the screen. Press Esc or Exit screen to go back.' : 'Drag to orbit, scroll or pinch to zoom'}
+            </small>
+          </h1>
+        </div>
+
         <div className="controls">
           {PORTFOLIO_URL && (
             <button type="button" aria-pressed={interactive} onClick={() => setInteractive(!interactive)}>
